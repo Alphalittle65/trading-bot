@@ -7,12 +7,12 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from google import genai
 from google.genai import types
 
-# Render Port Binding Fix (Standard HTTP Server)
+# Render Port Binding
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Bot is active")
+        self.wfile.write(b"Trading Bot is Active")
 
     def do_HEAD(self):
         self.send_response(200)
@@ -72,9 +72,16 @@ def main():
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    print("Bot is polling...")
-    # drop_pending_updates=True මගින් පරණ Conflict messages අයින් කරයි
-    app.run_polling(drop_pending_updates=True)
+    
+    print("Starting bot...")
+    
+    # Conflict නොවී දිගටම Retry වෙන පරිදි Polling Run කිරීම
+    app.run_polling(
+        drop_pending_updates=True,
+        allowed_updates=Update.ALL_TYPES,
+        poll_interval=1.0,
+        timeout=30
+    )
 
 if __name__ == '__main__':
     main()
