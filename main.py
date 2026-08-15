@@ -26,7 +26,7 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 # අලුත්ම නිවැරදි Model එකේ නම (2026 අගෝස්තු වන විට භාවිතා කළ යුතු එක)
 # ඔබට අවශ්‍ය නම් 'gemini-2.0-flash-lite' හෝ 'gemini-2.5-pro' ලෙස වෙනස් කරගන්න පුළුවන්
-MODEL_NAME = "gemini-2.0-flash-lite" 
+MODEL_NAME = "gemini-2.5-pro" 
 
 # ==========================================
 # 2. Bot ක්‍රියා කරන Functions
