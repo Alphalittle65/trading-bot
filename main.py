@@ -1,5 +1,4 @@
 import os
-import asyncio
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
@@ -28,7 +27,7 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 # දැනට වඩාත්ම නිවැරදිව වැඩ කරන Model එකේ නම
 MODEL_NAME = "gemini-1.5-flash"  
-# (සටහන: 2026 අගෝස්තු 12න් පසු මේක 'gemini-2.0-flash-lite' වලට මාරු කරන්න)
+# (2026 අගෝස්තු 12න් පසු මේක 'gemini-2.0-flash-lite' වලට මාරු කරන්න)
 
 # ==========================================
 # 3. Bot ක්‍රියා කරන Functions
@@ -42,13 +41,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """යවන ලද පණිවිඩ වලට පිළිතුරු දීම"""
     user_message = update.message.text
     
-    # User ට "Typing..." කියලා පෙන්නන එක (ඔප්ෂන්)
+    # User ට "Typing..." කියලා පෙන්නන එක
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
 
     try:
-        # ==========================================
-        # 🌟 අලුත්ම ක්‍රමය: Gemini AI එකට Request එක යැවීම
-        # ==========================================
+        # අලුත්ම ක්‍රමය: Gemini AI එකට Request එක යැවීම
         response = client.models.generate_content(
             model=MODEL_NAME,
             contents=user_message
@@ -61,7 +58,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(bot_reply)
 
     except Exception as e:
-        # දෝෂයක් වුනොත් (Ex: API Limit ඉවර වීම)
+        # දෝෂයක් වුනොත්
         await update.message.reply_text(f"සමාවෙන්න, මට පිළිතුරක් ලබා දීමට නොහැකි විය. දෝෂය: {str(e)}")
 
 # ==========================================
@@ -76,13 +73,8 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # ==========================================
-    # 🌟 අතිශයින් වැදගත්: පරණ සම්බන්ධතා කපා හැරීම
-    # ==========================================
-    # මේ පේළිය නිසා Bot එක Start වෙන හැම වෙලාවෙම Conflict එක වැළකෙනවා
-    asyncio.run(application.bot.delete_webhook(drop_pending_updates=True))
-    
     print("Bot එක පණ ගැහෙමින් පවතී...")
     
-    # Bot එක Start කිරීම
-    application.run_polling()
+    # 🌟 අතිශයින් වැදගත්: පරණ සම්බන්ධතා කපා හැරීම
+    # python-telegram-bot හි 'run_polling' ක්‍රමයේම මේක දාලා තියෙන නිසා අමතර asyncio අවුලක් නැහැ!
+    application.run_polling(drop_pending_updates=True)
