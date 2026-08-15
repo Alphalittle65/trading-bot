@@ -30,7 +30,6 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
-# AI Thinking System Instructions
 SYSTEM_INSTRUCTION = """
 You are an intelligent, highly analytical, and helpful AI assistant powered by Gemini. 
 When responding to any query:
@@ -49,9 +48,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
-        # Valid Active Model Name: gemini-2.0-flash
+        # Full resource path for 404 Fix: models/gemini-2.0-flash
         response = ai_client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="models/gemini-2.0-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
