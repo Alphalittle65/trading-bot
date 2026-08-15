@@ -49,7 +49,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
-        # Correct Supported Model Name: gemini-2.0-flash
+        # Valid Active Model Name: gemini-2.0-flash
         response = ai_client.models.generate_content(
             model="gemini-2.0-flash",
             contents=user_text,
