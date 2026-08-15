@@ -4,11 +4,13 @@ import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# අලුත්ම Google AI පැකේජය import කිරීම
+# ==========================================
+# 1. අලුත්ම Google AI පැකේජය import කිරීම (google-genai)
+# ==========================================
 from google import genai
 
 # ==========================================
-# 1. API Keys සහ Setup කොටස
+# 2. API Keys සහ Setup කොටස
 # ==========================================
 
 # Render Dashboard එකේ Environment Variables වලට මේ keys දාලා තියෙන්න ඕනේ!
@@ -21,15 +23,15 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Gemini Client එක පණ ගැන්වීම (අලුත් ක්‍රමය)
+# අලුත්ම විදියට Gemini Client එක පණ ගැන්වීම
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# අලුත්ම නිවැරදි Model එකේ නම (2026 අගෝස්තු වන විට භාවිතා කළ යුතු එක)
-# ඔබට අවශ්‍ය නම් 'gemini-2.0-flash-lite' හෝ 'gemini-2.5-pro' ලෙස වෙනස් කරගන්න පුළුවන්
-model = genai.GenerativeModel('gemini-2.0-flash-lite')
+# දැනට වඩාත්ම නිවැරදිව වැඩ කරන Model එකේ නම
+MODEL_NAME = "gemini-1.5-flash"  
+# (සටහන: 2026 අගෝස්තු 12න් පසු මේක 'gemini-2.0-flash-lite' වලට මාරු කරන්න)
 
 # ==========================================
-# 2. Bot ක්‍රියා කරන Functions
+# 3. Bot ක්‍රියා කරන Functions
 # ==========================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -40,11 +42,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """යවන ලද පණිවිඩ වලට පිළිතුරු දීම"""
     user_message = update.message.text
     
-    # User ට "Typing..." කියලා පෙන්නන එක (Optional)
+    # User ට "Typing..." කියලා පෙන්නන එක (ඔප්ෂන්)
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
 
     try:
-        # Gemini AI එකට අලුත් ක්‍රමයෙන් Request එක යැවීම
+        # ==========================================
+        # 🌟 අලුත්ම ක්‍රමය: Gemini AI එකට Request එක යැවීම
+        # ==========================================
         response = client.models.generate_content(
             model=MODEL_NAME,
             contents=user_message
@@ -57,11 +61,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(bot_reply)
 
     except Exception as e:
-        # දෝෂයක් වුනොත් (Ex: API Limit ඉවර වීම හෝ වෙනත් ගැටළු)
+        # දෝෂයක් වුනොත් (Ex: API Limit ඉවර වීම)
         await update.message.reply_text(f"සමාවෙන්න, මට පිළිතුරක් ලබා දීමට නොහැකි විය. දෝෂය: {str(e)}")
 
 # ==========================================
-# 3. Bot එක පණ ගැන්වීම (Main Loop)
+# 4. Bot එක පණ ගැන්වීම (Main Loop)
 # ==========================================
 
 if __name__ == "__main__":
@@ -72,9 +76,13 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Bot එක Start කිරීම (Polling ක්‍රමය)
+    # ==========================================
+    # 🌟 අතිශයින් වැදගත්: පරණ සම්බන්ධතා කපා හැරීම
+    # ==========================================
+    # මේ පේළිය නිසා Bot එක Start වෙන හැම වෙලාවෙම Conflict එක වැළකෙනවා
+    asyncio.run(application.bot.delete_webhook(drop_pending_updates=True))
+    
     print("Bot එක පණ ගැහෙමින් පවතී...")
     
-    # drop_pending_updates=True කියන එක දාන එක වැදගත්. 
-    # මෙහෙම කළොත් Server එක Restart වෙන හැම වෙලාවෙම පරණ messages නැවත නැවත පිළිතුරු දෙන්නේ නැහැ.
-    application.run_polling(drop_pending_updates=True)
+    # Bot එක Start කිරීම
+    application.run_polling()
