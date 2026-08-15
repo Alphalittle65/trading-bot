@@ -1,29 +1,10 @@
 import os
 import asyncio
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
+from aiohttp import web
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from google import genai
 from google.genai import types
-
-# Render Port Binding Fix
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Bot is active")
-
-    def do_HEAD(self):
-        self.send_response(200)
-        self.end_headers()
-
-def run_dummy_server():
-    port = int(os.environ.get("PORT", 8080))
-    server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
-    server.serve_forever()
-
-threading.Thread(target=run_dummy_server, daemon=True).start()
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -38,6 +19,9 @@ When responding to any query:
 3. Match the user's language (Sinhala or English).
 """
 
+async def handle_http(request):
+    return web.Response(text="Bot is active!")
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "හලෝ! 👋 මම Gemini AI තාක්ෂණයෙන් බලගන්වපු ඔයාගේ Smart Assistant. මගෙන් ඕනෑම දෙයක් අහන්න!"
@@ -48,9 +32,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
-        # Full resource path for 404 Fix: models/gemini-2.0-flash
         response = ai_client.models.generate_content(
-            model="models/gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
@@ -69,12 +52,33 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Gemini Error: {e}")
         await update.message.reply_text(f"⚠️ Error: {str(e)}")
 
-def main():
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    print("Bot is polling...")
-    app.run_polling()
+async def main():
+    # Setup Telegram Bot
+    telegram_app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    telegram_app.add_handler(CommandHandler("start", start))
+    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Setup Async HTTP Server for Render Port Binding
+    web_app = web.Application()
+    web_app.router.add_get('/', handle_http)
+    web_app.router.add_head('/', handle_http)
+    
+    port = int(os.environ.get("PORT", 8080))
+    runner = web.AppRunner(web_app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    print(f"Web server started on port {port}")
+
+    # Start Telegram Polling safely within the same asyncio loop
+    async with telegram_app:
+        await telegram_app.initialize()
+        await telegram_app.start()
+        await telegram_app.updater.start_polling()
+        print("Bot Polling started successfully!")
+        
+        # Keep running continuously
+        await asyncio.Event().wait()
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
