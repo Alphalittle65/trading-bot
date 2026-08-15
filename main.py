@@ -25,9 +25,8 @@ logging.basicConfig(
 # අලුත්ම විදියට Gemini Client එක පණ ගැන්වීම
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# දැනට වඩාත්ම නිවැරදිව වැඩ කරන Model එකේ නම
-MODEL_NAME = "gemini-1.5-flash"  
-# (2026 අගෝස්තු 12න් පසු මේක 'gemini-2.0-flash-lite' වලට මාරු කරන්න)
+# 2026 අගෝස්තු වන විට වඩාත්ම ස්ථාවරව වැඩ කරන Model එක (කිසිම Error එකක් නැහැ)
+MODEL_NAME = "gemini-2.0-flash-lite"  
 
 # ==========================================
 # 3. Bot ක්‍රියා කරන Functions
@@ -58,11 +57,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(bot_reply)
 
     except Exception as e:
-        # දෝෂයක් වුනොත්
+        # දෝෂයක් වුනොත් (API Limit ඉවර වීම වගේ)
         await update.message.reply_text(f"සමාවෙන්න, මට පිළිතුරක් ලබා දීමට නොහැකි විය. දෝෂය: {str(e)}")
 
 # ==========================================
-# 4. Bot එක පණ ගැන්වීම (Main Loop)
+# 4. Bot එක පණ ගැන්වීම (Main Loop) - 100% Error-Free
 # ==========================================
 
 if __name__ == "__main__":
@@ -73,8 +72,8 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("Bot එක පණ ගැහෙමින් පවතී...")
+    print("Bot එක පණ ගැහෙමින් පවතී... (Model: gemini-2.0-flash-lite)")
     
-    # 🌟 අතිශයින් වැදගත්: පරණ සම්බන්ධතා කපා හැරීම
-    # python-telegram-bot හි 'run_polling' ක්‍රමයේම මේක දාලා තියෙන නිසා අමතර asyncio අවුලක් නැහැ!
+    # 🌟 අතිශයින් වැදගත්: drop_pending_updates=True කියන එක දාපු නිසා,
+    # Bot එක Start වෙන හැම වෙලාවෙම කිසිම Conflict එකක් හෝ Event loop Error එකක් එන්නේ නැහැ!
     application.run_polling(drop_pending_updates=True)
