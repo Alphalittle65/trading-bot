@@ -30,18 +30,18 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
-# AI එක වැඩ කල යුතු ආකාරය (System Instruction)
+# AI Thinking System Instructions
 SYSTEM_INSTRUCTION = """
 You are an intelligent, highly analytical, and helpful AI assistant powered by Gemini. 
 When responding to any query:
-1. Think deeply, step-by-step, analyzing all sides of the user's prompt before providing an answer.
-2. Provide clear, direct, accurate, and comprehensive responses to ANY topic (Trading, Tech, General Knowledge, Logic, Business, etc.).
-3. Match the user's language (if asked in Sinhala, reply in natural Sinhala, if asked in English, reply in English).
+1. Think deeply and analyze step-by-step before answering.
+2. Provide clear, direct, and accurate responses to ANY topic.
+3. Match the user's language (Sinhala or English).
 """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "හලෝ! 👋 මම Gemini AI තාක්ෂණයෙන් බලගන්වපු ඔයාගේ Smart Assistant. ඕනෑම විෂයයක් හෝ ප්‍රශ්නයක් ගැන මගෙන් අහන්න!"
+        "හලෝ! 👋 මම Gemini AI තාක්ෂණයෙන් බලගන්වපු ඔයාගේ Smart Assistant. මගෙන් ඕනෑම දෙයක් අහන්න!"
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -49,9 +49,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
-        # Gemini 2.5 Flash model එක deep thinking instruction එක සමග Call කිරීම
+        # Correct Supported Model Name: gemini-2.0-flash
         response = ai_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
@@ -59,7 +59,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
         
-        # Telegram Message එකක් දීර්ඝ වැඩි නම් කඩා යැවීමට
         answer = response.text
         if len(answer) > 4000:
             for i in range(0, len(answer), 4000):
