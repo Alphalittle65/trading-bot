@@ -4,8 +4,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-from google import genai
-from google.genai import types
+import google.generativeai as genai  # මෙය එකතු කරන්න
 
 # Render Port Binding
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -28,7 +27,8 @@ threading.Thread(target=run_dummy_server, daemon=True).start()
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-ai_client = genai.Client(api_key=GEMINI_API_KEY)
+# Gemini Client නිවැරදිව configure කරන්න
+genai.configure(api_key=GEMINI_API_KEY)
 
 SYSTEM_INSTRUCTION = """
 You are an intelligent, highly analytical, and helpful AI assistant powered by Gemini. 
@@ -37,6 +37,12 @@ When responding to any query:
 2. Provide clear, direct, and accurate responses to ANY topic.
 3. Match the user's language (Sinhala or English).
 """
+
+# Model එක system_instruction සමඟ initialize කරන්න
+model = genai.GenerativeModel(
+    model_name='gemini-2.0-flash',
+    system_instruction=SYSTEM_INSTRUCTION
+)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -48,12 +54,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
-        # Active Model Name Fix: gemini-2.0-flash
-        response = ai_client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=user_text,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
+        # නිවැරදි generate_content ක්‍රමය
+        response = model.generate_content(
+            user_text,
+            generation_config=genai.types.GenerationConfig(
                 temperature=0.7,
             )
         )
