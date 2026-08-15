@@ -48,8 +48,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
+        # Active Model Name Fix: gemini-2.0-flash
         response = ai_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
@@ -74,8 +75,6 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     print("Starting bot...")
-    
-    # Conflict නොවී දිගටම Retry වෙන පරිදි Polling Run කිරීම
     app.run_polling(
         drop_pending_updates=True,
         allowed_updates=Update.ALL_TYPES,
