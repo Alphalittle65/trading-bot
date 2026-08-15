@@ -4,12 +4,9 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from google import genai
 
+# API Keys
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-# API Key එක Render එකෙන් ලබී නැතිනම් Error එකක් පෙන්වයි
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is missing! Check Environment Variables in Render.")
+GEMINI_API_KEY = "AIzaSy..."  # ඔයාගේ සම්පූර්ණ API Key එක මෙතනට Paste කරන්න
 
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -35,7 +32,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     if not TELEGRAM_BOT_TOKEN:
-        raise ValueError("TELEGRAM_BOT_TOKEN is missing!")
+        raise ValueError("TELEGRAM_BOT_TOKEN is missing in Render Environment Variables!")
 
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
