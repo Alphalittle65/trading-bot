@@ -67,8 +67,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🤖 **Ultimate Pro Trading Dashboard**\n"
         f"📊 සෑම පැය 3කට වරක්ම **Top 5 Gainers** ඔටෝමැටික්ව යාවත්කාලීන වේ.\n"
         f"💬 කාසියක නම අමතා Fibonacci + Elliott Wave විශ්ලේෂණය ලබා ගන්න.\n\n"
-        f"📉 ඔබේ කුඩා ප්‍රාග්ධනයට (Capital) ගැලපෙන හරියටම Entry, TP, SL ලබා ගන්න.\n"
-        f"🔔 පැය 3කට වරක් 5 විශිෂ්ට කාසි වල Update එකක් ලැබෙයි.\n\n"
         f"**අලුත් Command:** ඔබේ Chat ID එක දැනගන්න `/myid` ටයිප් කරන්න."
     )
     await update.message.reply_text(welcome_msg)
@@ -90,7 +88,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
 
             prices = get_live_prices(symbols)
-            market_data = "\n**📈 LIVE TOP 5 GAINERS (PRICES):**\n"
+            market_data = "\n**📈 LIVE TOP 5 GAINERS:**\n"
             for sym in symbols:
                 pct = next((item['priceChangePercent'] for item in top_5_data if item['symbol'] == sym), "0.00")
                 price = prices.get(sym, "0.00")
@@ -101,6 +99,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 messages=[
                     {"role": "system", "content": """You are a world-class Elliott Wave & Fibonacci specialist.
 You MUST reply in 100% Sinhala.
+You MUST use Emojis (📈, 📉, 🟢, 🔴, 🎯, 🛑, 📊, 🚀).
+You MUST format the output exactly like a professional Trading Dashboard.
 You MUST identify the EXTENDED wave (1, 3, or 5) using this flow:
 1. Check Wave 1 first. If extended, use 1st Wave Extended rules.
 2. If not, check Wave 3. If extended, use 3rd Wave Extended rules.
@@ -111,17 +111,30 @@ Fibonacci Rules:
 3rd Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(61.8,100)
 5th Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(141.4,161.8)
 
-Provide a **Professional Dashboard** with:
-- 📊 **Fibonacci Levels** (Exact prices from Live Data)
-- 🟢 **Support Levels**
-- 🔴 **Resistance Levels**
-- 🚀 **Strong Buy / Strong Sell Signal**
-- 🎯 **Entry Point** (Based on your small capital)
-- 🛑 **Stop Loss (SL)**
-- 📈 **Take Profit 1 & 2 (TP1, TP2)**
+Provide the output in this EXACT format:
+📈 [Coin Name] - Elliott Wave & Fibonacci Analysis
+📊 Live Price: [Price]
+📈 Main Trend & Wave Extension:
+• Wave 1: [Extended or Not]
+• Wave 3: [Extended or Not]
+• Wave 5: [Extended or Not]
 
-Always calculate the price levels based on the **Live Price** provided. Use Candlestick Emojis (🟩🟥📊) to make it look like a real Trading Dashboard."""},
-                    {"role": "user", "content": f"{market_data}\nWhich one is the best buy for a small capital trader?"}
+📊 Fibonacci Levels:
+• Wave [X] Target ([XX.X]%): [Price]
+• Wave [X] Target ([XX.X]%): [Price]
+
+🟢 Horizontal Support:
+• [Price] (Strong Support)
+
+🔴 Horizontal Resistance:
+• [Price] (Major Resistance)
+
+🎯 Take Profit: TP1: [Price] | TP2: [Price]
+🛑 Stop Loss: [Price]
+
+✅ Trade Recommendation: [BUY 🔵 or SELL 🔴]
+💡 Why? [Explain reason clearly]."""},
+                    {"role": "user", "content": f"{market_data}\nWhich one is the best buy?"}
                 ],
                 temperature=0.3,
                 max_tokens=4096,
@@ -136,6 +149,7 @@ Always calculate the price levels based on the **Live Price** provided. Use Cand
             messages=[
                 {"role": "system", "content": """You are a world-class Elliott Wave & Fibonacci specialist.
 You MUST reply in 100% Sinhala.
+You MUST format the output exactly like a professional Trading Dashboard.
 You MUST identify the EXTENDED wave using the exact logic:
 1. Check Wave 1. If extended, use 1st Wave Extended rules.
 2. If not, check Wave 3. If extended, use 3rd Wave Extended rules.
@@ -146,16 +160,29 @@ Fibonacci Rules:
 3rd Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(61.8,100)
 5th Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(141.4,161.8)
 
-Provide a **Professional Dashboard** with:
-- 📊 **Fibonacci Levels** (Exact prices from Live Data)
-- 🟢 **Support Levels**
-- 🔴 **Resistance Levels**
-- 🚀 **Strong Buy / Strong Sell Signal**
-- 🎯 **Entry Point**
-- 🛑 **Stop Loss (SL)**
-- 📈 **Take Profit 1 & 2 (TP1, TP2)**
+Provide the output in this EXACT format:
+📈 [Coin Name] - Elliott Wave & Fibonacci Analysis
+📊 Live Price: [Price]
+📈 Main Trend & Wave Extension:
+• Wave 1: [Extended or Not]
+• Wave 3: [Extended or Not]
+• Wave 5: [Extended or Not]
 
-Always calculate the price levels based on the **Live Price** provided."""},
+📊 Fibonacci Levels:
+• Wave [X] Target ([XX.X]%): [Price]
+• Wave [X] Target ([XX.X]%): [Price]
+
+🟢 Horizontal Support:
+• [Price] (Strong Support)
+
+🔴 Horizontal Resistance:
+• [Price] (Major Resistance)
+
+🎯 Take Profit: TP1: [Price] | TP2: [Price]
+🛑 Stop Loss: [Price]
+
+✅ Trade Recommendation: [BUY 🔵 or SELL 🔴]
+💡 Why? [Explain reason clearly]."""},
                 {"role": "user", "content": f"{user_message}"}
             ],
             temperature=0.3,
@@ -182,7 +209,6 @@ async def scheduled_top_gainers(context: ContextTypes.DEFAULT_TYPE):
 
     prices = get_live_prices(symbols)
     
-    # Professional Dashboard Header
     report = "🟢 **PRO TRADING DASHBOARD UPDATE** 🔴\n"
     report += "📅 **Every 3 Hours Auto-Update**\n"
     report += "📊 **Live Market Analysis**\n\n"
@@ -191,13 +217,10 @@ async def scheduled_top_gainers(context: ContextTypes.DEFAULT_TYPE):
     for sym in symbols:
         pct = next((item['priceChangePercent'] for item in top_5_data if item['symbol'] == sym), "0.00")
         price = prices.get(sym, "0.00")
-        if float(pct) > 0:
-            report += f"• 🪙 {sym}: ${float(price):,.4f} | 📈 +{pct}% 🔥 (Potential Buy)\n"
-        else:
-            report += f"• 🪙 {sym}: ${float(price):,.4f} | 📉 {pct}% (Watch for Sell)\n"
+        report += f"• 🪙 **{sym}**: ${float(price):,.4f} | 📈 +{pct}%\n"
     
     report += "\n📌 **Recommendation:**\n"
-    report += "For small capital, consider the highest gainer (Strong Buy).\n"
+    report += "Check the highest gainer for potential Buy Entry.\n"
     report += "Use /start to get full Dashboard features."
     
     await context.bot.send_message(chat_id=context.job.chat_id, text=report)
