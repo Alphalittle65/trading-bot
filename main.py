@@ -14,7 +14,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # ඔබේ Chat ID එක මෙතනට අලවන්න (උදා: 123456789)
-YOUR_CHAT_ID = 123456789  # <--- මෙතනට ඔබේ Chat ID අංකය අලවන්න!
+YOUR_CHAT_ID = 1419561512  # <--- මෙතනට ඔබේ Chat ID අංකය අලවන්න!
 
 BINANCE_TICKER_API = "https://api.binance.com/api/v3/ticker/24hr"
 BINANCE_PRICE_API = "https://api.binance.com/api/v3/ticker/price"
