@@ -20,7 +20,7 @@ logging.basicConfig(
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # 2026 අගෝස්තු වන විට නිවැරදිව වැඩ කරන Free Model එක
-MODEL_NAME = "gemini-2.5-flash" 
+MODEL_NAME = "gemini-2.0-flash-lite"
 
 # ==========================================
 # 2. Bot ක්‍රියා කරන Functions
