@@ -14,6 +14,9 @@ from groq import Groq
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+# ඔබේ Chat ID එක මෙතනට අලවන්න (උදා: 123456789)
+YOUR_CHAT_ID = 123456789  # <--- මෙතනට ඔබේ Chat ID අංකය අලවන්න!
+
 BINANCE_API_URL = "https://api.binance.com/api/v3/ticker/price"
 
 logging.basicConfig(
@@ -21,6 +24,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+# Groq Client Setup
 client = Groq(api_key=GROQ_API_KEY)
 
 # ==========================================
@@ -49,7 +53,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🤖 **Ultimate Trading Bot with Groq Vision**\n"
         f"📊 Binance Live Price ලබා ගත හැක.\n"
         f"🖼️ TradingView Chart එකක Image එකක් යවා විශ්ලේෂණය කරගන්න.\n"
-        f"💬 කාසියක නම අමතා විශ්ලේෂණය ලබා ගන්න.\n"
+        f"💬 කාසියක නම අමතා හරියටම ඔබේ Fibonacci Rules වලට අනුව විශ්ලේෂණය ලබා ගන්න.\n\n"
         f"**අලුත් Command:** ඔබේ Chat ID එක දැනගන්න `/myid` ටයිප් කරන්න."
     )
     await update.message.reply_text(welcome_msg)
@@ -74,7 +78,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": "Analyze this Trading Chart. Provide Fibonacci levels, Support, Resistance, and Elliott Wave status."},
+                            {"type": "text", "text": "Analyze this Trading Chart. Provide Fibonacci levels, Support, Resistance, and Elliott Wave status based on user's custom Fibonacci rules."},
                             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
                         ]
                     }
@@ -95,6 +99,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         # 📈 Text Analysis with Dashboard Output
+        # මෙතන තමයි ඔබේ Fibonacci Rules භාවිතා කරලා උත්තර හදන්නේ
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -102,39 +107,42 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 You MUST reply in 100% Sinhala language.
 You MUST provide the output in a beautiful, professional Dashboard format using Emojis (📈, 📊, 🟢, 🔴, 🎯, 🛑, ✅, 💡, 🚀).
 
+ABSOLUTE RULE: You MUST NOT include any history, fundamentals, or descriptions of the coin. ONLY provide pure technical live analysis.
+You MUST use the live market price provided in the user's prompt to calculate ALL levels.
+
 You MUST identify the EXTENDED wave (1, 3, or 5) using this flow:
 1. Check Wave 1 first. If extended, use 1st Wave Extended rules.
 2. If not, check Wave 3. If extended, use 3rd Wave Extended rules.
 3. If not, assume Wave 5 is extended and use 5th Wave Extended rules.
 
-Fibonacci Rules:
+Fibonacci Rules (User's Custom Rules):
 1st Wave Ext: W2(23.6,38.2,50,61.8), W3(61.8,78.6), W4(23.6,38.2,50), W5(61.8,78.6)
 3rd Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(61.8,100)
 5th Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(141.4,161.8)
 
 Provide the output EXACTLY in this format:
 📈 [Coin Name] - Elliott Wave & Fibonacci Analysis
-📊 Live Price: [Price]
+📊 Live Price: [Live Market Price]
 📈 Main Trend & Wave Extension:
-• Wave 1: [Extended or Not]
-• Wave 3: [Extended or Not]
-• Wave 5: [Extended or Not]
+• Wave 1: [Extended or Not Extended]
+• Wave 3: [Extended or Not Extended]
+• Wave 5: [Extended or Not Extended]
 
-📊 Fibonacci Levels:
-• Wave [X] Target ([XX.X]%): [Price]
-• Wave [X] Target ([XX.X]%): [Price]
+📊 Fibonacci Levels (Based on your custom rules):
+• Wave [X] Target ([XX.X]%): [Calculated Price]
+• Wave [X] Target ([XX.X]%): [Calculated Price]
 
 🟢 Horizontal Support:
-• [Price] (Strong Support)
+• [Calculated Price] (Strong Support)
 
 🔴 Horizontal Resistance:
-• [Price] (Major Resistance)
+• [Calculated Price] (Major Resistance)
 
-🎯 Take Profit: TP1: [Price] | TP2: [Price]
-🛑 Stop Loss: [Price]
+🎯 Take Profit: TP1: [Calculated Price] | TP2: [Calculated Price]
+🛑 Stop Loss: [Calculated Price]
 
-✅ Trade Recommendation: [BUY 🔵 or SELL 🔴]
-💡 Why? [Explain reason clearly]."""},
+✅ Trade Recommendation: BUY 🔵 or SELL 🔴
+💡 Why? [Brief technical reason based on the wave and fib levels]."""},
                 {"role": "user", "content": f"{user_message}"}
             ],
             temperature=0.3,
@@ -150,30 +158,7 @@ Provide the output EXACTLY in this format:
         await handle_message(update, context)
 
 # ==========================================
-# 4. Scheduler (පැය 3කට වරක් Auto Update - Public Version)
-# ==========================================
-
-async def scheduled_top_gainers(context: ContextTypes.DEFAULT_TYPE):
-    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT"]
-    prices = get_live_prices(symbols)
-    
-    report = "🟢 **PRO TRADING DASHBOARD UPDATE** 🔴\n"
-    report += "📅 **Every 3 Hours Auto-Update**\n"
-    report += "📊 **Live Market Analysis**\n\n"
-    report += "**Top Coins Live Prices:**\n"
-    
-    for sym in symbols:
-        price = prices.get(sym, "0.00")
-        report += f"• 🪙 **{sym}**: ${float(price):,.4f}\n"
-    
-    report += "\n📌 **Recommendation:**\n"
-    report += "Use /start to get full Dashboard features."
-    
-    # Public Version: මේක තමයි වෙනස! ඔබට විතරක් නෙවෙයි, ඔක්කොමටම යවයි
-    await context.bot.send_message(chat_id=context.job.chat_id, text=report)
-
-# ==========================================
-# 5. Main Loop
+# 4. Main Loop
 # ==========================================
 
 if __name__ == "__main__":
@@ -184,11 +169,5 @@ if __name__ == "__main__":
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.PHOTO, handle_message))
 
-    job_queue = application.job_queue
-    if job_queue:
-        # මෙතන chat_id එක අයින් කරලා දැම්මා
-        job_queue.run_repeating(scheduled_top_gainers, interval=10800, first=10)
-        logging.info("Scheduled analysis set for every 3 hours.")
-
-    print("Bot එක Groq Vision + Live Price සමඟ පණ ගැහෙමින් පවතී...")
+    print("Bot එක Groq Vision + Custom Fibonacci Rules සමඟ පණ ගැහෙමින් පවතී...")
     application.run_polling(drop_pending_updates=True)
