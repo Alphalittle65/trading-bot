@@ -5,14 +5,14 @@ import base64
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import requests
-import google.generativeai as genai
+from groq import Groq
 
 # ==========================================
 # 1. Setup කොටස
 # ==========================================
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # ඔබේ Chat ID එක මෙතනට අලවන්න (උදා: 123456789)
 YOUR_CHAT_ID = 123456789  # <--- මෙතනට ඔබේ Chat ID අංකය අලවන්න!
@@ -24,9 +24,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Gemini Vision AI Setup
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-pro')  # Vision සහිත Model එක
+# Groq Client Setup
+client = Groq(api_key=GROQ_API_KEY)
 
 # ==========================================
 # 2. Binance Data Function
@@ -51,9 +50,9 @@ def get_live_prices(symbols):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_msg = (
         f"🟢 **සාදරයෙන් පිළිගනිමු!** 🟢\n\n"
-        f"🤖 **Ultimate Trading Bot with Vision AI**\n"
+        f"🤖 **Ultimate Trading Bot with Groq Vision**\n"
         f"📊 Binance Live Price ලබා ගත හැක.\n"
-        f"🖼️ TradingView Chart එකක Image එකක් යවා Fibonacci / Wave විශ්ලේෂණය කරගන්න.\n"
+        f"🖼️ TradingView Chart එකක Image එකක් යවා විශ්ලේෂණය කරගන්න.\n"
         f"💬 කාසියක නම අමතා විශ්ලේෂණය ලබා ගන්න.\n\n"
         f"**අලුත් Command:** ඔබේ Chat ID එක දැනගන්න `/myid` ටයිප් කරන්න."
     )
@@ -69,15 +68,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # 🖼️ Image/Chart Analysis Check
         if update.message.photo:
+            # පින්තූරය ගන්න
             photo_file = await update.message.photo[-1].get_file()
             image_bytes = await photo_file.download_as_bytearray()
             
-            response = model.generate_content([
-                "මෙම Trading Chart එක විශ්ලේෂණය කරන්න. Fibonacci Levels, Support, Resistance, සහ Elliott Wave තත්වය පෙන්වන්න. 100% සිංහලෙන් උත්තර දෙන්න.",
-                {"mime_type": "image/jpeg", "data": image_bytes}
-            ])
+            # පින්තූරය Base64 බවට හරවන්න (Groq සඳහා)
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
             
-            await update.message.reply_text(response.text)
+            # Groq Vision එකට යැවීම
+            response = client.chat.completions.create(
+                model="llama-3.2-11b-vision-preview",  # Groq හි Vision Model එක
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Analyze this Trading Chart. Provide Fibonacci levels, Support, Resistance, and Elliott Wave status."},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                        ]
+                    }
+                ],
+                max_tokens=1024
+            )
+            
+            await update.message.reply_text(response.choices[0].message.content)
             return
 
         # 💬 Text Message Check
@@ -95,9 +108,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text(f"⚠️ {symbol} සඳහා මිල සොයාගත නොහැක.")
             return
 
-        # සාමාන්‍ය ප්‍රශ්න සඳහා Text AI පිළිතුරු
-        response = model.generate_content(f"100% සිංහලෙන් පමණක් පිළිතුරු දෙන්න. {user_message}")
-        await update.message.reply_text(response.text)
+        # සාමාන්‍ය ප්‍රශ්න සඳහා Text AI පිළිතුරු (Groq Text)
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": f"100% Sinhala language only. {user_message}"}],
+            temperature=0.7,
+            max_tokens=1024
+        )
+        await update.message.reply_text(response.choices[0].message.content)
 
     except Exception as e:
         print(f"Error: {e}")
@@ -116,5 +134,5 @@ if __name__ == "__main__":
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.PHOTO, handle_message))
 
-    print("Bot එක Gemini Vision + Live Price සමඟ පණ ගැහෙමින් පවතී...")
+    print("Bot එක Groq Vision + Live Price සමඟ පණ ගැහෙමින් පවතී...")
     application.run_polling(drop_pending_updates=True)
