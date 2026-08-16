@@ -82,8 +82,9 @@ if __name__ == "__main__":
     print("Bot එක Webhook සමඟ පණ ගැහෙමින් පවතී...")
     
     # Run Webhook
-    application.run_webhook(
+       application.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 10000)),
-        url_path="/webhook"
+        url_path="/webhook",
+        max_connections=5  # 🌟 මේ පේළිය එකතු කරන්න!
     )
