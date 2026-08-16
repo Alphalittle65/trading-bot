@@ -3,45 +3,44 @@ import logging
 import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-from openai import OpenAI
+from groq import Groq
 
 # ==========================================
 # 1. Setup කොටස
 # ==========================================
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
-# DeepSeek Client එක පණ ගැන්වීම (OpenAI SDK එකම පාවිච්චි කරයි)
-client = OpenAI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url="https://api.deepseek.com"
-)
+# Groq Client එක පණ ගැන්වීම
+client = Groq(api_key=GROQ_API_KEY)
 
 # ==========================================
 # 2. Bot ක්‍රියා කරන Functions
 # ==========================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("සාදරයෙන් පිළිගනිමු! මම DeepSeek AI Trading Assistant.")
+    await update.message.reply_text("සාදරයෙන් පිළිගනිමු! මම Groq AI Trading Assistant.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
 
     try:
-        # DeepSeek API එකට යැවීම
+        # Groq API එකට ඉංග්‍රීසියෙන් යැවීම
         response = client.chat.completions.create(
-            model="deepseek-chat",  # DeepSeek Model එකේ නම
+            model="llama-3.3-70b-versatile",  # වේගවත්ම Free Model එක
             messages=[
+                {"role": "system", "content": "You are a helpful assistant. Always reply in Sinhala language."}, # සිංහලෙන් උත්තර දෙන්න කියන උපදෙස
                 {"role": "user", "content": user_message}
             ],
-            stream=False
+            temperature=0.7,
+            max_tokens=1024,
         )
         
         # උත්තරය ලබාගන්න
@@ -68,7 +67,7 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("Bot එක DeepSeek සමඟ පණ ගැහෙමින් පවතී...")
+    print("Bot එක Groq සමඟ පණ ගැහෙමින් පවතී...")
     
     # Drop pending updates නිසා Conflict එක එන්නේ නැහැ!
     application.run_polling(drop_pending_updates=True)
