@@ -24,9 +24,9 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Gemini Vision AI Setup (1.5 Pro මාදිලිය Image බැලීමට සුදුසුයි)
+# Gemini Vision AI Setup
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-pro')
+model = genai.GenerativeModel('gemini-1.5-pro')  # Vision සහිත Model එක
 
 # ==========================================
 # 2. Binance Data Function
@@ -67,14 +67,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
 
     try:
-        # 🖼️ Image/Chart Analysis Check (පින්තූරයක් එවලා තියෙනවා නම්)
+        # 🖼️ Image/Chart Analysis Check
         if update.message.photo:
-            # අන්තිමට එවපු පින්තූරය ගන්න
             photo_file = await update.message.photo[-1].get_file()
-            # පින්තූරය දත්ත (bytes) ලෙස ගන්න
             image_bytes = await photo_file.download_as_bytearray()
             
-            # Gemini Vision එකට පින්තූරය යවන්න
             response = model.generate_content([
                 "මෙම Trading Chart එක විශ්ලේෂණය කරන්න. Fibonacci Levels, Support, Resistance, සහ Elliott Wave තත්වය පෙන්වන්න. 100% සිංහලෙන් උත්තර දෙන්න.",
                 {"mime_type": "image/jpeg", "data": image_bytes}
@@ -84,16 +81,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         # 💬 Text Message Check
-        # Top Gainers Check
         if "top" in user_message.lower() or "gain" in user_message.lower() or "හොඳම" in user_message.lower():
             await update.message.reply_text("📊 Binance මගින් Top 5 Gainers සොයමින්...")
-            
-            # ඔබට අවශ්‍ය නම් මෙතනට Top Gainers Logic එක එකතු කරගන්න.
-            # සරලව පිළිතුරු දීමට:
             await update.message.reply_text("🔍 මේ සඳහා අමතර කේතයක් අවශ්‍ය වේ.")
             return
 
-        # Normal Coin Price & Analysis
         if "price" in user_message.lower():
             symbol = user_message.split()[0].upper().replace("USDT", "") + "USDT"
             prices = get_live_prices([symbol])
