@@ -1,6 +1,7 @@
 import os
 import logging
 import asyncio
+import telegram  # 🌟 මේ පේළිය අලුතින් එකතු කරන්න!
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from google import genai
