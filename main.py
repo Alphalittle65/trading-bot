@@ -14,7 +14,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # ඔබේ Chat ID එක මෙතනට අලවන්න (උදා: 123456789)
-YOUR_CHAT_ID = 123456789  # <--- මෙතනට ඔබේ ඇත්ත ID අංකය අලවන්න!
+YOUR_CHAT_ID = 123456789  # <--- මෙතනට ඔබේ Chat ID අංකය අලවන්න!
 
 BINANCE_TICKER_API = "https://api.binance.com/api/v3/ticker/24hr"
 BINANCE_PRICE_API = "https://api.binance.com/api/v3/ticker/price"
@@ -62,16 +62,13 @@ def get_live_prices(symbols):
 # ==========================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    owner_name = "Sasith Imarsha"
-    bot_birthday = "2026.08.16"
-    
     welcome_msg = (
         f"🟢 **සාදරයෙන් පිළිගනිමු!** 🟢\n\n"
-        f"මෙම Bot එක නිර්මාණය කරන ලද්දේ **{owner_name}** විසිනි.\n"
-        f"මාගේ උපන් දිනය: **{bot_birthday}** 🎂\n\n"
-        f"🤖 මම උසස් Elliott Wave + Fibonacci විශ්ලේෂකයෙකි.\n"
-        f"📊 සෑම පැය 3කට වරක්ම Top Gainers වාර්තාවක් ලබා දෙමි.\n"
-        f"💬 කාසියක නම අමතා විශ්ලේෂණය ලබා ගන්න.\n"
+        f"🤖 **Ultimate Pro Trading Dashboard**\n"
+        f"📊 සෑම පැය 3කට වරක්ම **Top 5 Gainers** ඔටෝමැටික්ව යාවත්කාලීන වේ.\n"
+        f"💬 කාසියක නම අමතා Fibonacci + Elliott Wave විශ්ලේෂණය ලබා ගන්න.\n\n"
+        f"📉 ඔබේ කුඩා ප්‍රාග්ධනයට (Capital) ගැලපෙන හරියටම Entry, TP, SL ලබා ගන්න.\n"
+        f"🔔 පැය 3කට වරක් 5 විශිෂ්ට කාසි වල Update එකක් ලැබෙයි.\n\n"
         f"**අලුත් Command:** ඔබේ Chat ID එක දැනගන්න `/myid` ටයිප් කරන්න."
     )
     await update.message.reply_text(welcome_msg)
@@ -86,18 +83,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Top Gainers Check
         if "top" in user_message.lower() or "gain" in user_message.lower() or "හොඳම" in user_message.lower():
-            await update.message.reply_text("📊 වෙළඳපොලේ Top 5 Gainers සොයමින්...")
+            await update.message.reply_text("📊 **Pro Dashboard එක සකස් වෙමින්...**")
             symbols, top_5_data = get_top_gainers(limit=5)
             if not symbols:
                 await update.message.reply_text("⚠️ මේ මොහොතේ දත්ත ලබා ගැනීමට නොහැකි විය.")
                 return
 
             prices = get_live_prices(symbols)
-            market_data = "\n**📈 TOP 5 GAINERS (LIVE DATA):**\n"
+            market_data = "\n**📈 LIVE TOP 5 GAINERS (PRICES):**\n"
             for sym in symbols:
                 pct = next((item['priceChangePercent'] for item in top_5_data if item['symbol'] == sym), "0.00")
                 price = prices.get(sym, "0.00")
-                market_data += f"• {sym}: ${float(price):,.4f} | +{pct}%\n"
+                market_data += f"• 🪙 **{sym}**: ${float(price):,.4f} | 📈 +{pct}%\n"
 
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -114,32 +111,26 @@ Fibonacci Rules:
 3rd Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(61.8,100)
 5th Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(141.4,161.8)
 
-Provide TP, SL, Support/Resistance and a clear BUY/SELL recommendation."""},
-                    {"role": "user", "content": f"{market_data}\nWhich one is the best buy?"}
+Provide a **Professional Dashboard** with:
+- 📊 **Fibonacci Levels** (Exact prices from Live Data)
+- 🟢 **Support Levels**
+- 🔴 **Resistance Levels**
+- 🚀 **Strong Buy / Strong Sell Signal**
+- 🎯 **Entry Point** (Based on your small capital)
+- 🛑 **Stop Loss (SL)**
+- 📈 **Take Profit 1 & 2 (TP1, TP2)**
+
+Always calculate the price levels based on the **Live Price** provided. Use Candlestick Emojis (🟩🟥📊) to make it look like a real Trading Dashboard."""},
+                    {"role": "user", "content": f"{market_data}\nWhich one is the best buy for a small capital trader?"}
                 ],
                 temperature=0.3,
                 max_tokens=4096,
             )
             bot_reply = response.choices[0].message.content
-            footer = f"\n\n---\n🤖 Developed by: Sasith Imarsha | 🎂 Birthday: 2026.08.16"
-            await update.message.reply_text(bot_reply + footer)
+            await update.message.reply_text(bot_reply)
             return
 
         # Normal Coin Analysis
-        coin_keywords = ["BTC", "ETH", "SOL", "XRP", "ADA", "DOGE", "AVAX", "DOT", "MATIC", "LINK"]
-        found_coins = []
-        for coin in coin_keywords:
-            if coin in user_message.upper():
-                found_coins.append(coin)
-        
-        market_data_text = ""
-        if found_coins:
-            prices = get_live_prices(found_coins)
-            if prices:
-                market_data_text = "\n**📈 LIVE MARKET DATA:**\n"
-                for symbol, price in prices.items():
-                    market_data_text += f"• {symbol}: ${float(price):,.4f}\n"
-
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -155,16 +146,24 @@ Fibonacci Rules:
 3rd Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(61.8,100)
 5th Wave Ext: W2(38.2,50,61.8,78.6), W3(50,61.8,78.6,100,141.4), W4(23.6,38.2,50,61.8), W5(141.4,161.8)
 
-Provide TP, SL, Support/Resistance and a clear BUY/SELL recommendation."""},
-                {"role": "user", "content": f"{market_data_text}\nUser Question: {user_message}"}
+Provide a **Professional Dashboard** with:
+- 📊 **Fibonacci Levels** (Exact prices from Live Data)
+- 🟢 **Support Levels**
+- 🔴 **Resistance Levels**
+- 🚀 **Strong Buy / Strong Sell Signal**
+- 🎯 **Entry Point**
+- 🛑 **Stop Loss (SL)**
+- 📈 **Take Profit 1 & 2 (TP1, TP2)**
+
+Always calculate the price levels based on the **Live Price** provided."""},
+                {"role": "user", "content": f"{user_message}"}
             ],
             temperature=0.3,
             max_tokens=2048,
         )
         
         bot_reply = response.choices[0].message.content
-        footer = f"\n\n---\n🤖 Developed by: Sasith Imarsha | 🎂 Birthday: 2026.08.16"
-        await update.message.reply_text(bot_reply + footer)
+        await update.message.reply_text(bot_reply)
 
     except Exception as e:
         print(f"Error: {e}")
@@ -172,7 +171,7 @@ Provide TP, SL, Support/Resistance and a clear BUY/SELL recommendation."""},
         await handle_message(update, context)
 
 # ==========================================
-# 4. Scheduler (පැය 3කට වරක්)
+# 4. Scheduler (පැය 3කට වරක් Auto Update)
 # ==========================================
 
 async def scheduled_top_gainers(context: ContextTypes.DEFAULT_TYPE):
@@ -182,32 +181,26 @@ async def scheduled_top_gainers(context: ContextTypes.DEFAULT_TYPE):
         return
 
     prices = get_live_prices(symbols)
-    market_data = "\n**📊 TOP 5 GAINERS (3-HOUR REPORT):**\n"
+    
+    # Professional Dashboard Header
+    report = "🟢 **PRO TRADING DASHBOARD UPDATE** 🔴\n"
+    report += "📅 **Every 3 Hours Auto-Update**\n"
+    report += "📊 **Live Market Analysis**\n\n"
+    report += "**TOP 5 GAINERS (RIGHT NOW):**\n"
+    
     for sym in symbols:
         pct = next((item['priceChangePercent'] for item in top_5_data if item['symbol'] == sym), "0.00")
         price = prices.get(sym, "0.00")
-        market_data += f"• {sym}: ${float(price):,.4f} | +{pct}%\n"
-
-    prompt = f"""{market_data}
-
-Which is the best buy among these 5 coins right now?
-Analyze the best coin using the exact Elliott Wave & Fibonacci rules (1st, 3rd, or 5th Wave Extended).
-Provide TP, SL, Support/Resistance and a clear BUY/SELL recommendation.
-100% Sinhala language only."""
-
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=4096,
-        )
-        report = response.choices[0].message.content
-        footer = f"\n\n---\n🤖 Developed by: Sasith Imarsha | 🎂 Birthday: 2026.08.16"
-        await context.bot.send_message(chat_id=context.job.chat_id, text=report + footer)
-
-    except Exception as e:
-        await context.bot.send_message(chat_id=context.job.chat_id, text=f"⚠️ Error: {e}")
+        if float(pct) > 0:
+            report += f"• 🪙 {sym}: ${float(price):,.4f} | 📈 +{pct}% 🔥 (Potential Buy)\n"
+        else:
+            report += f"• 🪙 {sym}: ${float(price):,.4f} | 📉 {pct}% (Watch for Sell)\n"
+    
+    report += "\n📌 **Recommendation:**\n"
+    report += "For small capital, consider the highest gainer (Strong Buy).\n"
+    report += "Use /start to get full Dashboard features."
+    
+    await context.bot.send_message(chat_id=context.job.chat_id, text=report)
 
 # ==========================================
 # 5. Main Loop
@@ -223,7 +216,7 @@ if __name__ == "__main__":
     job_queue = application.job_queue
     if job_queue:
         job_queue.run_repeating(scheduled_top_gainers, interval=10800, first=10, chat_id=YOUR_CHAT_ID)
-        logging.info("Scheduled analysis set.")
+        logging.info("Scheduled analysis set for every 3 hours.")
 
-    print("Bot එක Advanced Wave Logic සමඟ පණ ගැහෙමින් පවතී...")
+    print("Bot එක Pro Dashboard + Auto Update සමඟ පණ ගැහෙමින් පවතී...")
     application.run_polling(drop_pending_updates=True)
