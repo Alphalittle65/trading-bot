@@ -88,9 +88,16 @@ if __name__ == "__main__":
     print("Bot එක Webhook සමඟ පණ ගැහෙමින් පවතී...")
     
     # 🌟 Run Webhook (max_connections=5 මගින් Flood Control එක අඩු කරයි)
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 10000)),
-        url_path="/webhook",
-        max_connections=5
-    )
+        # 🌟 අලුත් කොටස: Bot එක කඩා වැටුණොත් තත්පරයක් ඉඳලා ආයෙත් උත්සාහ කරන්න
+    while True:
+        try:
+            application.run_webhook(
+                listen="0.0.0.0",
+                port=int(os.environ.get("PORT", 10000)),
+                url_path="/webhook",
+                max_connections=5
+            )
+            break  # සාර්ථක වුනොත් loop එකෙන් එලියට යන්න
+        except Exception as e:
+            print(f"Webhook එක කඩා වැටුණා. තත්පරයකින් නැවත උත්සාහ කරයි. Error: {e}")
+            asyncio.sleep(1)
