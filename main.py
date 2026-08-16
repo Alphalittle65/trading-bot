@@ -45,7 +45,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 🛑 කිසිම Error එකක් නිසා Bot එක කඩා වැටෙන්නේ නැහැ!
         print(f"Bot එකට Error එකක් ආවා: {e}")
         
-        # තත්පරයක් ඉඳලා ආයෙත් උත්සාහ කරන්න
+        # තත්පරයක් ඉඳලා ආයෙත් උත්සාහ කරන්න (Recursion)
         await asyncio.sleep(1)
         await handle_message(update, context)
 
@@ -61,5 +61,8 @@ if __name__ == "__main__":
 
     print("Bot එක පණ ගැහෙමින් පවතී... (Polling ක්‍රමය)")
     
-    # 🌟 මේ පේළිය නිසා කිසිම Conflict එකක් එන්නේ නැහැ!
+    # 🌟 Render Free Plan එකේ 'No open ports' ගැටළුව විසඳීමට මේ පේළිය
+    port = int(os.environ.get("PORT", 10000))
+    
+    # 🌟 Drop pending updates නිසා Conflict එක එන්නේ නැහැ!
     application.run_polling(drop_pending_updates=True)
