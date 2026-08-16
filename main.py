@@ -1,7 +1,7 @@
 import os
 import logging
 import asyncio
-import telegram  # 🌟 මේ පේළිය අලුතින් එකතු කරන්න!
+import telegram
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from google import genai
@@ -43,18 +43,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(response.text)
 
     except Exception as e:
-        # දෝෂයක් ආවම (Flood Control ඇතුළු ඕනෑම දෝෂයක්)
-        # මේකෙන් Bot එක කඩා වැටෙන්නේ නැහැ. Error එක පෙන්නලා ආයෙත් උත්සාහ කරයි.
-        error_msg = str(e)
-        if "RetryAfter" in error_msg:
-            # Flood control එකක් නම්, තත්පර 1ක් ඉඳලා ආයෙත් try කරන්න
-            await asyncio.sleep(1)
-            await handle_message(update, context) # නැවත කැඳවීම (Re-run)
-        else:
-            # වෙනත් දෝෂයක් නම් User ට පෙන්නන්න
-            await update.message.reply_text(f"දෝෂය: {error_msg}")
+        # 🛑 ඕනෑම Error එකක් ආවත් Bot එක කඩා වැටෙන්නේ නැහැ!
+        print(f"Bot එකට Error එකක් ආවා: {e}")
+        
+        # තත්පරයක් ඉඳලා ආයෙත් උත්සාහ කිරීමට (Recursion)
+        await asyncio.sleep(1)
+        await handle_message(update, context)
+
 # ==========================================
-# 3. Webhook Setup කිරීම (මේක නිසා Sleep ගැටළුව නැහැ)
+# 3. Webhook Setup කිරීම (Sleep ගැටළුව නැහැ)
 # ==========================================
 
 async def setup_webhook(application):
@@ -77,7 +74,7 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Webhook Setup
+    # Webhook Setup (අතිශයින් වැදගත්)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(setup_webhook(application))
