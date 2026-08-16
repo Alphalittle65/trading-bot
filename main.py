@@ -42,16 +42,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text(response.text)
 
-    except telegram.error.RetryAfter as e:
-        # 🌟 මේක තමයි Flood Control එක හදන්නා විදිය
-        # තත්පර කිහිපයක් ඉඳලා ආයෙත් උත්සාහ කරනවා
-        await asyncio.sleep(e.retry_after)
-        # නැවත උත්සාහ කිරීමට මේ ෆන්ක්ෂන් එකම call කරන්න
-        await handle_message(update, context)
-
     except Exception as e:
-        await update.message.reply_text(f"දෝෂය: {str(e)}")
-
+        # දෝෂයක් ආවම (Flood Control ඇතුළු ඕනෑම දෝෂයක්)
+        # මේකෙන් Bot එක කඩා වැටෙන්නේ නැහැ. Error එක පෙන්නලා ආයෙත් උත්සාහ කරයි.
+        error_msg = str(e)
+        if "RetryAfter" in error_msg:
+            # Flood control එකක් නම්, තත්පර 1ක් ඉඳලා ආයෙත් try කරන්න
+            await asyncio.sleep(1)
+            await handle_message(update, context) # නැවත කැඳවීම (Re-run)
+        else:
+            # වෙනත් දෝෂයක් නම් User ට පෙන්නන්න
+            await update.message.reply_text(f"දෝෂය: {error_msg}")
 # ==========================================
 # 3. Webhook Setup කිරීම (මේක නිසා Sleep ගැටළුව නැහැ)
 # ==========================================
