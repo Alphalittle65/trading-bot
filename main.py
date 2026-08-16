@@ -7,7 +7,7 @@ from groq import Groq
 import requests
 
 # ==========================================
-# 1. Setup කොටස (API Keys සහ Settings)
+# 1. Setup කොටස
 # ==========================================
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -16,7 +16,6 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # ඔබේ Chat ID එක මෙතනට අලවන්න (උදා: 123456789)
 YOUR_CHAT_ID = 123456789  # <--- මෙතනට ඔබේ ඇත්ත ID අංකය අලවන්න!
 
-# Binance API Endpoint
 BINANCE_API_URL = "https://api.binance.com/api/v3/ticker/price"
 
 logging.basicConfig(
@@ -27,7 +26,7 @@ logging.basicConfig(
 client = Groq(api_key=GROQ_API_KEY)
 
 # ==========================================
-# 2. Binance Data ලබා ගැනීමේ ක්‍රමය
+# 2. Binance Data Function
 # ==========================================
 
 def get_live_prices(symbols):
@@ -44,7 +43,7 @@ def get_live_prices(symbols):
         return None
 
 # ==========================================
-# 3. Bot ක්‍රියා කරන Functions
+# 3. Bot Functions
 # ==========================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -64,7 +63,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(welcome_msg)
 
 async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """පරිශීලකයාට තමන්ගේ Chat ID එක පෙන්වීම"""
     await update.message.reply_text(f"ඔබේ Telegram Chat ID එක: `{update.effective_chat.id}`")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -72,7 +70,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
 
     try:
-        # පරිශීලකයා කාසි ගැන අසනවාදැයි පරීක්ෂා කිරීම
+        # Coin හඳුනාගැනීම
         coin_keywords = ["BTC", "ETH", "SOL", "XRP", "ADA", "DOGE", "AVAX", "DOT", "MATIC", "LINK"]
         found_coins = []
         for coin in coin_keywords:
@@ -83,37 +81,49 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if found_coins:
             prices = get_live_prices(found_coins)
             if prices:
-                market_data_text = "\n**📈 සජීවී වෙළඳපොල දත්ත (Binance):**\n"
+                market_data_text = "\n**📈 LIVE MARKET DATA (BASE YOUR CALCULATIONS ON THIS):**\n"
                 for symbol, price in prices.items():
                     market_data_text += f"• {symbol}: ${float(price):,.4f}\n"
-                market_data_text += "\n"
+                market_data_text += "\n**⚠️ REQUIREMENT:** Base ALL your Fibonacci, TP, SL, and Elliott Wave analysis strictly on these exact prices.\n"
             else:
-                market_data_text = "\n*(Binance දත්ත ලබා ගැනීමට නොහැකි විය.)*\n\n"
+                market_data_text = "\n*(⚠️ LIVE DATA UNAVAILABLE. Analysis may be inaccurate.)*\n\n"
 
-        # Groq AI එකට යැවීම
+        # Groq AI Request (Elliott Wave + Zigzag + Fib)
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": f"""You are the world's best Crypto Trading Analyst.
-ABSOLUTE RULE: You MUST reply ONLY in Sinhala language.
-ALWAYS be precise and professional.
-Analyze the user's query. Use the provided live market data if available.
-Provide:
-1. Trend for next 3 hours (Uptrend/Downtrend/Sideways)
-2. % Prediction
-3. Recommendation (BUY/SELL/STRONG BUY/STRONG SELL)
-4. TP1 & TP2
-5. SL
-6. Liquidity Zone
-7. Elliott Wave Status."""},
-                {"role": "user", "content": f"{market_data_text}\nUser's Question: {user_message}"}
+                {"role": "system", "content": f"""You are a world-class Elliott Wave, Fibonacci, and Technical Analyst, exactly like a professional TradingView analyst.
+You MUST reply in 100% pure Sinhala language.
+
+Analyze the coin based on the Live Price provided below.
+Provide a detailed report with the following EXACT sections:
+
+1. **Main Trend Identification:**
+   - Clearly mark the Main Trend (Uptrend or Downtrend).
+   - Identify the current position in the Elliott Wave cycle (Wave 1, 2, 3, 4, or 5).
+   - Break down the structure specifically focusing on **Wave 5**.
+
+2. **Corrective Pattern Analysis:**
+   - Analyze the current correction.
+   - Clearly state whether it is a **Simple Zigzag** or a **Double Zigzag**.
+   - Explain why it is that specific pattern based on the price action.
+
+3. **Fibonacci & Price Levels:**
+   - Provide the current Live Price.
+   - Give the nearest Fibonacci Retracement levels (0.382, 0.5, 0.618, 0.786).
+   - Give Take Profit (TP1, TP2) and Stop Loss (SL) levels.
+
+4. **Trade Recommendation:**
+   - Give a clear Buy/Sell/Strong Buy/Strong Sell recommendation.
+
+Do NOT provide generic answers. Your reply must look like an advanced professional chart analysis."""},
+                {"role": "user", "content": f"{market_data_text}\nUser Question: {user_message}"}
             ],
-            temperature=0.3,
-            max_tokens=2048,
+            temperature=0.2,
+            max_tokens=4096,
         )
         
         bot_reply = response.choices[0].message.content
-        
         footer = f"\n\n---\n🤖 Developed by: Sasith Imarsha | 🎂 Birthday: 2026.08.16"
         
         if len(bot_reply) + len(footer) <= 4096:
@@ -127,7 +137,7 @@ Provide:
         await handle_message(update, context)
 
 # ==========================================
-# 4. ⏰ පැය 3ක Scheduler (Top 10 Coins සඳහා)
+# 4. Scheduler (පැය 3කට වරක් Top 10)
 # ==========================================
 
 async def scheduled_analysis(context: ContextTypes.DEFAULT_TYPE):
@@ -136,36 +146,33 @@ async def scheduled_analysis(context: ContextTypes.DEFAULT_TYPE):
     prices = get_live_prices(top_10_coins)
     market_data = ""
     if prices:
-        market_data = "\n**📊 පැය 3ක වාර්තාව සඳහා සජීවී දත්ත:**\n"
+        market_data = "\n**📊 3-HOUR REPORT - LIVE PRICES:**\n"
         for symbol, price in prices.items():
             market_data += f"• {symbol}: ${float(price):,.4f}\n"
     else:
-        market_data = "\n*(Binance දත්ත ලබා ගැනීමට නොහැකි විය.)*\n"
+        market_data = "\n*(Binance data unavailable.)*\n"
 
     prompt = f"""{market_data}
 
-පහත සඳහන් Top 10 කාසි සඳහා පැය 3ක විශ්ලේෂණයක් සපයන්න: BTC, ETH, SOL, XRP, ADA, DOGE, AVAX, DOT, MATIC, LINK.
+Analyze the following Top 10 coins for the next 3 hours: BTC, ETH, SOL, XRP, ADA, DOGE, AVAX, DOT, MATIC, LINK.
 
-එක් එක් කාසිය සඳහා:
-1. Trend (Uptrend/Downtrend)
-2. % Change Prediction
-3. Recommendation (BUY/SELL)
-4. TP1 & TP2
-5. SL
-6. Liquidity Zone
-7. Elliott Wave Cycle
+For EACH coin, provide:
+1. Main Trend (Uptrend/Downtrend) & Elliott Wave Cycle (Wave 1-5).
+2. Zigzag/Double Zigzag identification for correction.
+3. % Prediction & Recommendation (BUY/SELL).
+4. Fibonacci based TP1, TP2, and SL.
 
-100% සිංහල භාෂාවෙන් පමණක් උත්තර සපයන්න."""
+100% Sinhala language only.
+Provide a complete, structured report."""
 
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
+            temperature=0.2,
             max_tokens=4096,
         )
         report = response.choices[0].message.content
-        
         footer = f"\n\n---\n🤖 Developed by: Sasith Imarsha | 🎂 Birthday: 2026.08.16"
         full_message = report + footer
         
@@ -176,10 +183,10 @@ async def scheduled_analysis(context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=context.job.chat_id, text=full_message)
 
     except Exception as e:
-        await context.bot.send_message(chat_id=context.job.chat_id, text=f"⚠️ වාර්තාව සැකසීමේදී දෝෂයක්: {e}")
+        await context.bot.send_message(chat_id=context.job.chat_id, text=f"⚠️ Error generating report: {e}")
 
 # ==========================================
-# 5. Bot එක පණ ගැන්වීම (Main Loop)
+# 5. Main Loop
 # ==========================================
 
 if __name__ == "__main__":
@@ -189,7 +196,6 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("myid", my_id))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # 🌟 Scheduler එක පණ ගැන්වීම (පැය 3කට වරක්)
     job_queue = application.job_queue
     if job_queue:
         job_queue.run_repeating(scheduled_analysis, interval=10800, first=10, chat_id=YOUR_CHAT_ID)
@@ -197,5 +203,5 @@ if __name__ == "__main__":
     else:
         logging.warning("JobQueue not available.")
 
-    print("Bot එක Groq + Binance සමඟ පණ ගැහෙමින් පවතී...")
+    print("Bot එක Advanced Elliott Wave + Zigzag Analysis සමඟ පණ ගැහෙමින් පවතී...")
     application.run_polling(drop_pending_updates=True)
